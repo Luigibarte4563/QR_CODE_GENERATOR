@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern QR Code Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- QRCode Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body {
+            background-color: #f3f4f6;
+        }
+        #qrcode img, #qrcode canvas {
+            display: inline-block;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
+        <div class="text-center mb-8">
+            <h1 class="text-2xl font-bold text-gray-800">QR Code Generator</h1>
+            <p class="text-gray-500 text-sm mt-2">Convert your links or text into a QR code instantly.</p>
+        </div>
+
+        <div class="space-y-4">
+            <div>
+                <label for="text" class="block text-sm font-medium text-gray-700 mb-1">Text or URL</label>
+                <input type="text" id="text" 
+                    placeholder="https://example.com" 
+                    class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="generateQR()" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center">
+                    <span>Generate</span>
+                </button>
+                <button id="downloadBtn" onclick="downloadQR()" 
+                    class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 px-4 rounded-lg transition-colors border border-gray-200 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled>
+                    <span>Download</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Custom Notification Message Box -->
+        <div id="messageBox" class="hidden mt-4 p-3 rounded-lg text-sm text-center"></div>
+
+        <!-- Result Container -->
+        <div id="qrcodeContainer" class="mt-8 hidden flex flex-col items-center">
+            <div id="qrcode" class="p-4 bg-white border-2 border-dashed border-gray-200 rounded-xl"></div>
+            <p class="text-xs text-gray-400 mt-4 uppercase tracking-widest">Preview</p>
+        </div>
+    </div>
+
+    <script>
+        let qrInstance = null;
+
+        function showMessage(msg, isError = false) {
+            const box = document.getElementById("messageBox");
+            box.textContent = msg;
+            box.className = `mt-4 p-3 rounded-lg text-sm text-center ${isError ? 'bg-red-50 text-red-600' : 'bg-green-50 text-green-600'}`;
+            box.classList.remove("hidden");
+            setTimeout(() => box.classList.add("hidden"), 3000);
+        }
+
+        function generateQR() {
+            const textInput = document.getElementById("text");
+            const text = textInput.value.trim();
+            const qrDisplay = document.getElementById("qrcode");
+            const container = document.getElementById("qrcodeContainer");
+            const downloadBtn = document.getElementById("downloadBtn");
+
+            if (text === "") {
+                showMessage("Please enter text or a URL first", true);
+                return;
+            }
+
+            // Clear previous content
+            qrDisplay.innerHTML = "";
+            container.classList.remove("hidden");
+
+            // Generate New QR
+            qrInstance = new QRCode(qrDisplay, {
+                text: text,
+                width: 256,
+                height: 256,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            // Enable download button once generated
+            downloadBtn.disabled = false;
+            showMessage("QR Code generated successfully!");
+        }
+
+        function downloadQR() {
+            const qrDiv = document.getElementById("qrcode");
+            const img = qrDiv.querySelector("img");
+            const canvas = qrDiv.querySelector("canvas");
+            
+            let dataUrl = "";
+
+            // QRCode.js creates both a canvas and an image. 
+            // We prioritize the image src if available, otherwise use canvas data.
+            if (img && img.src && img.src.startsWith('data:image')) {
+                dataUrl = img.src;
+            } else if (canvas) {
+                dataUrl = canvas.toDataURL("image/png");
+            }
+
+            if (!dataUrl) {
+                showMessage("Could not extract image data. Please try again.", true);
+                return;
+            }
+
+            // Standard download trigger
+            const link = document.createElement("a");
+            link.href = dataUrl;
+            link.download = "qr-code-" + Date.now() + ".png";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Add Enter key support
+        document.getElementById("text").addEventListener("keypress", (e) => {
+            if (e.key === "Enter") generateQR();
+        });
+    </script>
+</body>
+</html>
